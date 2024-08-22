@@ -23,7 +23,10 @@ ui <- fluidPage(
       verbatimTextOutput("confMatrix"),
       
       h3("Evaluation Metrics"),
-      verbatimTextOutput("metrics")
+      verbatimTextOutput("metrics"),
+      
+      h3("Decision Boundary and Test Data"),
+      plotOutput("plot")
     )
   )
 )
@@ -72,7 +75,7 @@ server <- function(input, output) {
     f1 <- 2 * precision * recall / (precision + recall)
     
     return(list(conf_matrix = conf_matrix, accuracy = accuracy, 
-                precision = precision, recall = recall, f1 = f1))
+                precision = precision, recall = recall, f1 = f1, predictions = predictions))
   }
   
   # React to the run button
@@ -144,6 +147,20 @@ server <- function(input, output) {
       cat("Precision:", results$precision, "\n")
       cat("Recall:", results$recall, "\n")
       cat("F1 Score:", results$f1, "\n")
+    })
+    
+    # Plot decision boundaries and test data
+    output$plot <- renderPlot({
+      plot(test_data$X1, test_data$X2, col = results$predictions, pch = 19, 
+           main = "Decision Boundary and Test Data", xlab = "X1", ylab = "X2")
+      grid_points <- expand.grid(
+        X1 = seq(min(all_data$X1), max(all_data$X1), length.out = 100),
+        X2 = seq(min(all_data$X2), max(all_data$X2), length.out = 100)
+      )
+      
+      grid_predictions <- apply(grid_points, 1, function(x) predict_class(as.numeric(x), means, cov_matrix))
+      
+      points(grid_points$X1, grid_points$X2, col = adjustcolor(grid_predictions, alpha.f = 0.2), pch = ".")
     })
   })
 }
